@@ -1,2 +1,0 @@
-https://roboticsbackend.com/install-ubuntu-on-raspberry-pi-without-monitor/#Setup_Wi-Fi_and_ssh_for_your_Raspberry_Pi_4_without_a_monitor
-https://www.instructables.com/Raspberry-Pi-4-USB-Boot-No-SD-Card/

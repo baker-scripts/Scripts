@@ -1,16 +1,10 @@
 # Scripts
 
-General-purpose utility scripts for selfhosted infrastructure.
+Utility scripts for selfhosted infrastructure management.
 
-## Key Scripts
-- `nextdns_sync.py` — Syncs NextDNS configuration
-- `.bash_aliases` — Shared shell aliases
-- `sysrestart` — System restart utility
-
-## Legacy (may be deprecated)
-- `syncaliases.sh` — Alias sync (replaced by dockergit)
-- `PiHoleInstall.txt` / `PiHoleOS.txt` — Pi-hole setup notes
-- `server-xfer.md` — Server transfer documentation
+## Contents
+- `nextdns_sync.py` — Syncs NextDNS profile settings (allowlist, denylist, security, privacy)
+- `.bash_aliases` — Shell aliases for common operations
 
 ## Conventions
 - Bash scripts: POSIX-compatible where possible
