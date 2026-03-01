@@ -14,4 +14,4 @@ Just a catch all for various scripts and things
   - cl for cd & list
 - .bash_aliases
   - various aliases
-- Sync Aliases using `curl -O https://raw.githubusercontent.com/bakerboy448/Scripts/master/syncaliases.sh`
+- Sync Aliases using `curl -O https://raw.githubusercontent.com/baker-scripts/Scripts/master/syncaliases.sh`
