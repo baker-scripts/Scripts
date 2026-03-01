@@ -1,5 +1,5 @@
 #!/bin/bash
-repo="https://raw.githubusercontent.com/bakerboy448/Scripts/"
+repo="https://raw.githubusercontent.com/baker-scripts/Scripts/"
 branch="master"
 if [ -n "${1+x}" ]; then
     user="$1"
