@@ -37,14 +37,12 @@ _dc_init() {
     local raw
     raw=$(grep '^COMPOSE_FILE=' "$DOCKER_GIT_DIR/.env" 2>/dev/null | cut -d= -f2-)
     # Convert relative paths to absolute (relative to DOCKER_GIT_DIR)
-    # Use parameter expansion to split on ':' (works in both bash and zsh)
-    local abs=""
-    local IFS=':'
-    read -ra _cf_parts <<< "$raw"
-    for f in "${_cf_parts[@]}"; do
+    # Use tr+while to split on ':' (portable across bash and zsh)
+    local abs="" f
+    while IFS= read -r f || [[ -n "$f" ]]; do
       [[ "$f" != /* ]] && f="$DOCKER_GIT_DIR/$f"
       abs="${abs:+$abs:}$f"
-    done
+    done < <(printf '%s' "$raw" | tr ':' '\n')
     export COMPOSE_FILE="$abs"
   fi
 }
