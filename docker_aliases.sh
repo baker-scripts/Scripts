@@ -239,9 +239,10 @@ function dctop {
 # Quick status overview
 function dcq {
   _dc_init || return 1
-  local running=$(_dc_compose ps --status running -q 2>/dev/null | wc -l)
-  local stopped=$(_dc_compose ps --status exited -q 2>/dev/null | wc -l)
-  local unhealthy=$(docker ps --filter "health=unhealthy" -q 2>/dev/null | wc -l)
+  local running stopped unhealthy
+  running=$(_dc_compose ps --status running -q 2>/dev/null | wc -l)
+  stopped=$(_dc_compose ps --status exited -q 2>/dev/null | wc -l)
+  unhealthy=$(docker ps --filter "health=unhealthy" -q 2>/dev/null | wc -l)
   echo "Running: $(_dc_green "$running") | Stopped: $(_dc_yellow "$stopped") | Unhealthy: $(_dc_red "$unhealthy")"
 }
 
