@@ -37,8 +37,11 @@ _dc_init() {
     local raw
     raw=$(grep '^COMPOSE_FILE=' "$DOCKER_GIT_DIR/.env" 2>/dev/null | cut -d= -f2-)
     # Convert relative paths to absolute (relative to DOCKER_GIT_DIR)
-    local abs="" IFS=':'
-    for f in $raw; do
+    # Use parameter expansion to split on ':' (works in both bash and zsh)
+    local abs=""
+    local IFS=':'
+    read -ra _cf_parts <<< "$raw"
+    for f in "${_cf_parts[@]}"; do
       [[ "$f" != /* ]] && f="$DOCKER_GIT_DIR/$f"
       abs="${abs:+$abs:}$f"
     done
@@ -150,16 +153,24 @@ function dcpull {
   else
     images=$(_dc_plain config --images "$@" 2>/dev/null | sort -u)
   fi
-  local total=$(echo "$images" | wc -l)
-  local count=0
+  local total
+  total=$(echo "$images" | wc -l)
+  local count=0 failed=0
   while IFS= read -r img; do
     [[ -z "$img" ]] && continue
     ((count++))
     local short="${img##*/}"
     _dc_blue "[$count/$total] Pulling ${short}..."
-    docker pull --quiet "$img" 2>/dev/null || true
+    if ! docker pull --quiet "$img"; then
+      ((failed++))
+      _dc_red "Failed to pull $img"
+    fi
   done <<< "$images"
-  _dc_green "Pull complete ($total unique images)"
+  if (( failed > 0 )); then
+    _dc_yellow "Pull complete ($total images, $failed failed)"
+  else
+    _dc_green "Pull complete ($total unique images)"
+  fi
 }
 
 function dcup {
@@ -241,7 +252,7 @@ function grpdown {
   local services=$(_dc_group "$grp")
   [[ -z "$services" ]] && { _dc_red "No services in group: $grp"; return 1; }
   _dc_blue "Stopping $grp: $services"
-  _dc_compose down $services "$@"
+  _dc_compose stop $services "$@"
   _dc_green "$grp stopped"
 }
 
@@ -428,12 +439,21 @@ if command -v fzf &>/dev/null; then
 
   function dclogsi { local svc; svc=$(_dc_fzf_pick); [[ -n "$svc" ]] && dclogs "$svc"; }
   function dcexeci { local svc; svc=$(_dc_fzf_pick); [[ -n "$svc" ]] && dcexec "$svc" "${@:-bash}"; }
-  function dcrsi { local svc; svc=$(_dc_fzf_pick true); [[ -n "$svc" ]] && dcrs "$svc"; }
-  function dcrecreatei { local svc; svc=$(_dc_fzf_pick true); [[ -n "$svc" ]] && dcrecreate "$svc"; }
-  function dcupi { local svc; svc=$(_dc_fzf_pick true); [[ -n "$svc" ]] && dcup "$svc"; }
+  function dcrsi {
+    local svc; svc=$(_dc_fzf_pick true)
+    [[ -n "$svc" ]] && while IFS= read -r s; do dcrs "$s"; done <<< "$svc"
+  }
+  function dcrecreatei {
+    local svc; svc=$(_dc_fzf_pick true)
+    [[ -n "$svc" ]] && while IFS= read -r s; do dcrecreate "$s"; done <<< "$svc"
+  }
+  function dcupi {
+    local svc; svc=$(_dc_fzf_pick true)
+    [[ -n "$svc" ]] && while IFS= read -r s; do dcup "$s"; done <<< "$svc"
+  }
   function dcdowni {
     local svc; svc=$(_dc_fzf_pick true)
-    [[ -n "$svc" ]] && { _dc_init || return 1; _dc_compose down "$svc"; }
+    [[ -n "$svc" ]] && { _dc_init || return 1; while IFS= read -r s; do _dc_compose stop "$s"; done <<< "$svc"; }
   }
 
   function dcpsi {

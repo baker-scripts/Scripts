@@ -40,7 +40,8 @@ _TMUX_SESS_PAIRS=(
 _TMUX_NOTABLE_PROCS=(claude vim nvim docker node python pwsh htop)
 
 # === Implementation ===
-if [[ $- == *i* ]] && [[ -n "$SSH_TTY" ]] && [[ -z "$TMUX" ]] && [[ -z "$NOTMUX" ]]; then
+if command -v tmux >/dev/null 2>&1 &&
+   [[ $- == *i* ]] && [[ -n "$SSH_TTY" ]] && [[ -z "$TMUX" ]] && [[ -z "$NOTMUX" ]]; then
 
     # Create sessions for valid paths
     for _pair in "${_TMUX_SESS_PAIRS[@]}"; do
@@ -91,7 +92,7 @@ if [[ $- == *i* ]] && [[ -n "$SSH_TTY" ]] && [[ -z "$TMUX" ]] && [[ -z "$NOTMUX"
 
         while IFS='|' read -r _sname _swins _satt; do
             (( _tmux_count++ ))
-            _tmux_names+=("$_sname")
+            _tmux_names[$_tmux_count]="$_sname"
             _label="${_sname}${_satt:+ *}"
             _procs=$(_tmux_procs "$_sname")
             _age=$(_tmux_age "$_sname")
@@ -121,7 +122,7 @@ if [[ $- == *i* ]] && [[ -n "$SSH_TTY" ]] && [[ -z "$TMUX" ]] && [[ -z "$NOTMUX"
                 ;;
             [0-9]*)
                 if (( _choice >= 1 && _choice <= _tmux_count )); then
-                    exec tmux attach -t "${_tmux_names[_choice-1]}"
+                    exec tmux attach -t "${_tmux_names[_choice]}"
                 else
                     printf 'Invalid selection.\n' >&2
                 fi
