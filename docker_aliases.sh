@@ -24,10 +24,10 @@ else
 fi
 
 # Colors
-_dc_red() { echo -e "\033[0;31m$1\033[0m"; }
-_dc_green() { echo -e "\033[0;32m$1\033[0m"; }
-_dc_yellow() { echo -e "\033[0;33m$1\033[0m"; }
-_dc_blue() { echo -e "\033[0;34m$1\033[0m"; }
+_dc_red() { printf '\033[0;31m%s\033[0m\n' "$1"; }
+_dc_green() { printf '\033[0;32m%s\033[0m\n' "$1"; }
+_dc_yellow() { printf '\033[0;33m%s\033[0m\n' "$1"; }
+_dc_blue() { printf '\033[0;34m%s\033[0m\n' "$1"; }
 
 # Initialize compose environment (no cd — uses --project-directory instead)
 _dc_init() {
@@ -72,8 +72,9 @@ _dc_compose() {
 _wait_healthy() {
   local svc=$1 timeout=${2:-60}
   _dc_blue "Waiting for $svc to be healthy (max ${timeout}s)..."
+  local status
   for ((i=0; i<timeout; i++)); do
-    local status=$(docker inspect --format='{{.State.Health.Status}}' "$svc" 2>/dev/null)
+    status=$(docker inspect --format='{{.State.Health.Status}}' "$svc" 2>/dev/null)
     case "$status" in
       healthy) _dc_green "$svc is healthy"; return 0 ;;
       unhealthy) _dc_red "$svc is unhealthy"; return 1 ;;
@@ -182,12 +183,16 @@ function dcup {
 }
 
 function dcrestart {
-  if [[ "$1" != "-f" ]] && [[ "$1" != "--force" ]]; then
-    _dc_confirm "Full restart (down → pull → up)?" || { _dc_yellow "Cancelled"; return 0; }
-  else
+  if [[ "$1" == "-f" ]] || [[ "$1" == "--force" ]]; then
     shift
+  else
+    _dc_confirm "Full restart (down → pull → up)?" || { _dc_yellow "Cancelled"; return 0; }
   fi
-  dcdown -f "$@" && dcpull && dcup
+  if [[ $# -gt 0 ]]; then
+    _dc_yellow "dcrestart operates on the full stack. Use 'dcrs <service>' for single-service restart."
+    return 1
+  fi
+  dcdown -f && dcpull && dcup
 }
 
 # Monitoring Commands
@@ -384,8 +389,8 @@ if [[ -n "$BASH_VERSION" ]]; then
     local services
     [[ -z "$COMPOSE_FILE" ]] && [[ -f "$DOCKER_GIT_DIR/.env" ]] && \
       export COMPOSE_FILE=$(grep '^COMPOSE_FILE=' "$DOCKER_GIT_DIR/.env" 2>/dev/null | cut -d= -f2-)
-    services=$(_dc_plain config --services 2>/dev/null)
-    COMPREPLY=($(compgen -W "$services" -- "$cur"))
+    mapfile -t services < <(_dc_plain config --services 2>/dev/null)
+    mapfile -t COMPREPLY < <(compgen -W "${services[*]}" -- "$cur")
   }
   complete -F _dc_services dclogs dcexec dcrecreate dcrs dc
 elif [[ -n "$ZSH_VERSION" ]]; then
@@ -415,20 +420,20 @@ if command -v fzf &>/dev/null; then
       fzf --height 40% --reverse --border --header "Select group"
   }
 
-  function grpi { local grp=$(_dc_fzf_group); [[ -n "$grp" ]] && grpshow "$grp"; }
-  function grpupi { local grp=$(_dc_fzf_group); [[ -n "$grp" ]] && grpup "$grp"; }
-  function grpdowni { local grp=$(_dc_fzf_group); [[ -n "$grp" ]] && grpdown "$grp"; }
-  function grplogsi { local grp=$(_dc_fzf_group); [[ -n "$grp" ]] && grplogs "$grp"; }
-  function grppsi { local grp=$(_dc_fzf_group); [[ -n "$grp" ]] && grpps "$grp"; }
+  function grpi { local grp; grp=$(_dc_fzf_group); [[ -n "$grp" ]] && grpshow "$grp"; }
+  function grpupi { local grp; grp=$(_dc_fzf_group); [[ -n "$grp" ]] && grpup "$grp"; }
+  function grpdowni { local grp; grp=$(_dc_fzf_group); [[ -n "$grp" ]] && grpdown "$grp"; }
+  function grplogsi { local grp; grp=$(_dc_fzf_group); [[ -n "$grp" ]] && grplogs "$grp"; }
+  function grppsi { local grp; grp=$(_dc_fzf_group); [[ -n "$grp" ]] && grpps "$grp"; }
 
-  function dclogsi { local svc=$(_dc_fzf_pick); [[ -n "$svc" ]] && dclogs "$svc"; }
-  function dcexeci { local svc=$(_dc_fzf_pick); [[ -n "$svc" ]] && dcexec "$svc" "${@:-bash}"; }
-  function dcrsi { local svc=$(_dc_fzf_pick true); [[ -n "$svc" ]] && dcrs $svc; }
-  function dcrecreatei { local svc=$(_dc_fzf_pick true); [[ -n "$svc" ]] && dcrecreate $svc; }
-  function dcupi { local svc=$(_dc_fzf_pick true); [[ -n "$svc" ]] && dcup $svc; }
+  function dclogsi { local svc; svc=$(_dc_fzf_pick); [[ -n "$svc" ]] && dclogs "$svc"; }
+  function dcexeci { local svc; svc=$(_dc_fzf_pick); [[ -n "$svc" ]] && dcexec "$svc" "${@:-bash}"; }
+  function dcrsi { local svc; svc=$(_dc_fzf_pick true); [[ -n "$svc" ]] && dcrs "$svc"; }
+  function dcrecreatei { local svc; svc=$(_dc_fzf_pick true); [[ -n "$svc" ]] && dcrecreate "$svc"; }
+  function dcupi { local svc; svc=$(_dc_fzf_pick true); [[ -n "$svc" ]] && dcup "$svc"; }
   function dcdowni {
-    local svc=$(_dc_fzf_pick true)
-    [[ -n "$svc" ]] && { _dc_init || return 1; _dc_compose down $svc; }
+    local svc; svc=$(_dc_fzf_pick true)
+    [[ -n "$svc" ]] && { _dc_init || return 1; _dc_compose down "$svc"; }
   }
 
   function dcpsi {

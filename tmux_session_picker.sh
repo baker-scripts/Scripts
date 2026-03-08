@@ -92,8 +92,7 @@ if [[ $- == *i* ]] && [[ -n "$SSH_TTY" ]] && [[ -z "$TMUX" ]] && [[ -z "$NOTMUX"
         while IFS='|' read -r _sname _swins _satt; do
             (( _tmux_count++ ))
             _tmux_names+=("$_sname")
-            local _label="${_sname}${_satt:+ *}"
-            local _procs _age
+            _label="${_sname}${_satt:+ *}"
             _procs=$(_tmux_procs "$_sname")
             _age=$(_tmux_age "$_sname")
             printf '%-4s %-16s %3s %-20s %s\n' "${_tmux_count})" "$_label" "$_swins" "$_procs" "$_age"
@@ -117,12 +116,12 @@ if [[ $- == *i* ]] && [[ -n "$SSH_TTY" ]] && [[ -z "$TMUX" ]] && [[ -z "$NOTMUX"
                     tmux new-session -d -s "$_new_name" -c "$_new_path"
                 else
                     printf 'Invalid name or path.\n' >&2
-                    break
+                    continue
                 fi
                 ;;
             [0-9]*)
                 if (( _choice >= 1 && _choice <= _tmux_count )); then
-                    exec tmux attach -t "${_tmux_names[$_choice]}"
+                    exec tmux attach -t "${_tmux_names[_choice-1]}"
                 else
                     printf 'Invalid selection.\n' >&2
                 fi
