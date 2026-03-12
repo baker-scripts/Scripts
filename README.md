@@ -12,7 +12,7 @@ Utility scripts for selfhosted infrastructure management.
 ## Contributors
 
 <a href="https://github.com/baker-scripts/Scripts/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=baker-scripts/Scripts" />
+  <img src="https://contrib.rocks/image?repo=baker-scripts/Scripts" alt="Contributors" />
 </a>
 
 ## Disclaimer
