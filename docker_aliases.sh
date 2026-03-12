@@ -130,6 +130,7 @@ function dcdown {
   _dc_green "All services stopped"
 }
 
+# shellcheck disable=SC2120
 function dcpull {
   _dc_init || return 1
   local images
@@ -180,7 +181,8 @@ function dcup {
     _dc_compose up -d
   else
     services="$*"
-    local total=$(echo "$services" | wc -w)
+    local total
+    total=$(echo "$services" | wc -w)
     local count=0
     for svc in $services; do
       ((count++))
@@ -248,7 +250,8 @@ function dcq {
 function grpdown {
   local grp=$1; shift
   _dc_init || return 1
-  local services=$(_dc_group "$grp")
+  local services
+  services=$(_dc_group "$grp")
   [[ -z "$services" ]] && { _dc_red "No services in group: $grp"; return 1; }
   _dc_blue "Stopping $grp: $services"
   _dc_compose stop $services "$@"
@@ -258,7 +261,8 @@ function grpdown {
 function grpup {
   local grp=$1; shift
   _dc_init || return 1
-  local services=$(_dc_group "$grp")
+  local services
+  services=$(_dc_group "$grp")
   [[ -z "$services" ]] && { _dc_red "No services in group: $grp"; return 1; }
   _dc_blue "Starting $grp: $services"
   _dc_compose up -d $services "$@"
@@ -268,7 +272,8 @@ function grpup {
 function grplogs {
   local grp=$1; shift
   _dc_init || return 1
-  local services=$(_dc_group "$grp")
+  local services
+  services=$(_dc_group "$grp")
   [[ -z "$services" ]] && { _dc_red "No services in group: $grp"; return 1; }
   _dc_compose logs -f $services "$@"
 }
@@ -276,7 +281,8 @@ function grplogs {
 function grpps {
   local grp=$1; shift
   _dc_init || return 1
-  local services=$(_dc_group "$grp")
+  local services
+  services=$(_dc_group "$grp")
   [[ -z "$services" ]] && { _dc_red "No services in group: $grp"; return 1; }
   _dc_compose ps $services "$@"
 }
@@ -284,7 +290,8 @@ function grpps {
 function grprestart {
   local grp=$1; shift
   _dc_init || return 1
-  local services=$(_dc_group "$grp")
+  local services
+  services=$(_dc_group "$grp")
   [[ -z "$services" ]] && { _dc_red "No services in group: $grp"; return 1; }
   _dc_blue "Restarting $grp: $services"
   _dc_compose restart $services "$@"
@@ -302,7 +309,8 @@ function grplist {
 function grpshow {
   local grp=$1
   _dc_init || return 1
-  local services=$(_dc_group "$grp")
+  local services
+  services=$(_dc_group "$grp")
   [[ -z "$services" ]] && { _dc_red "No services in group: $grp"; return 1; }
   echo "$grp: $services"
 }
@@ -397,8 +405,10 @@ if [[ -n "$BASH_VERSION" ]]; then
   _dc_services() {
     local cur="${COMP_WORDS[COMP_CWORD]}"
     local services
-    [[ -z "$COMPOSE_FILE" ]] && [[ -f "$DOCKER_GIT_DIR/.env" ]] && \
-      export COMPOSE_FILE=$(grep '^COMPOSE_FILE=' "$DOCKER_GIT_DIR/.env" 2>/dev/null | cut -d= -f2-)
+    if [[ -z "$COMPOSE_FILE" ]] && [[ -f "$DOCKER_GIT_DIR/.env" ]]; then
+      COMPOSE_FILE=$(grep '^COMPOSE_FILE=' "$DOCKER_GIT_DIR/.env" 2>/dev/null | cut -d= -f2-)
+      export COMPOSE_FILE
+    fi
     mapfile -t services < <(_dc_plain config --services 2>/dev/null)
     mapfile -t COMPREPLY < <(compgen -W "${services[*]}" -- "$cur")
   }
@@ -406,8 +416,11 @@ if [[ -n "$BASH_VERSION" ]]; then
 elif [[ -n "$ZSH_VERSION" ]]; then
   _dc_services() {
     local services
-    [[ -z "$COMPOSE_FILE" ]] && [[ -f "$DOCKER_GIT_DIR/.env" ]] && \
-      export COMPOSE_FILE=$(grep '^COMPOSE_FILE=' "$DOCKER_GIT_DIR/.env" 2>/dev/null | cut -d= -f2-)
+    if [[ -z "$COMPOSE_FILE" ]] && [[ -f "$DOCKER_GIT_DIR/.env" ]]; then
+      COMPOSE_FILE=$(grep '^COMPOSE_FILE=' "$DOCKER_GIT_DIR/.env" 2>/dev/null | cut -d= -f2-)
+      export COMPOSE_FILE
+    fi
+    # shellcheck disable=SC2296,SC2206
     services=(${(f)"$(_dc_plain config --services 2>/dev/null)"})
     _describe 'service' services
   }

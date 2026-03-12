@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # General System Utilities
 alias c='clear'
 alias gh='history | grep'
@@ -32,15 +33,12 @@ alias speed='speedtest-cli --server 2406 --simple'
 alias dcdown='docker compose down'
 alias dcup='docker compose up'
 alias dexec='docker exec -it'
-alias dockerclean='docker rm $(docker ps -a -q)'
 alias dockerdu='docker system df'
 alias dockerls='docker ps -a'
-alias docker-rmi-untagged='docker rmi $(docker images | grep "^<none>" | awk "{print \$3}")'
-alias dockerstopall='docker stop $(docker ps -a -q)'
 alias dlogs='docker logs'
 
 # Development and Git
-alias startgit='cd `git rev-parse --show-toplevel` && git checkout master && git pull'
+startgit() { cd "$(git rev-parse --show-toplevel)" && git checkout master && git pull; }
 
 # File Management
 alias rmrf='rm -rf'  # Use with caution

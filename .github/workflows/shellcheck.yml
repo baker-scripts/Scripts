@@ -2,11 +2,14 @@ name: ShellCheck
 
 on:
   push:
+    branches: [main]
     paths:
       - "**/*.sh"
+      - ".bash_aliases"
   pull_request:
     paths:
       - "**/*.sh"
+      - ".bash_aliases"
 
 jobs:
   shellcheck:
