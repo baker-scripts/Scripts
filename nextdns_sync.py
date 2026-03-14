@@ -37,16 +37,16 @@ def setup_logger(name: str) -> logging.Logger:
     """Sets up a logger with a given name."""
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)  # Set to DEBUG to capture all messages
-    
+
     # Create a stream handler and set its format
     handler = logging.StreamHandler()
     formatter = logging.Formatter('%(asctime)s|%(levelname)s|%(message)s')
     handler.setFormatter(formatter)
-    
+
     # Add the handler if it doesn't already exist
     if not logger.hasHandlers():
         logger.addHandler(handler)
-    
+
     return logger
 
 logger = setup_logger(__name__)
@@ -74,7 +74,7 @@ def api_request(method: str, url: str, headers: Optional[Dict[str, str]] = None,
     logger.info("[API CALL] USING %s", method)
     if data is not None:
         logger.info("[API CALL] Using payload %s", json.dumps(data, separators=(',', ':')))
-    
+
     try:
         response = requests.request(method, url, headers=headers, data=data, json=json, timeout=timeout)
         response.raise_for_status()
@@ -144,10 +144,10 @@ def sync_profiles(keys_to_sync: List[str], payload: Optional[Dict] = None) -> No
         settings = fetch_profile_settings(PROFILE_MAIN)
         data = settings['data']
         logger.info("[SYNC] Settings from Profile %s", PROFILE_MAIN)
-        
+
         if payload is None:
             payload = build_payload(data, keys_to_sync)
-        
+
         payload = alpha_sort_lists(payload)
         logger.debug("[SYNC] Generated Payload: %s", json.dumps(payload, separators=(',', ':')))
 
