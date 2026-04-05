@@ -1,5 +1,7 @@
 # Scripts
 
+[![ShellCheck](https://github.com/baker-scripts/Scripts/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/baker-scripts/Scripts/actions/workflows/shellcheck.yml)
+
 Utility scripts for selfhosted infrastructure management.
 
 ## Contents
