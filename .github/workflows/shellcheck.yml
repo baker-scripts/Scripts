@@ -11,7 +11,11 @@ on:
       - "**/*.sh"
       - ".bash_aliases"
 
-jobs:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+
   shellcheck:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -21,3 +25,6 @@ jobs:
         uses: ludeeus/action-shellcheck@2.0.0
         with:
           severity: warning
+
+permissions:
+  contents: read
