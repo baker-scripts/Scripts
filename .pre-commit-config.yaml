@@ -12,7 +12,7 @@ repos:
       - id: trailing-whitespace
         name: trim trailing whitespace
       - id: no-commit-to-branch
-        args: ['--branch', 'master']
+        args: ['--branch', 'main']
       - id: check-added-large-files
         name: check for added large files
       - id: detect-private-key
@@ -39,14 +39,11 @@ repos:
       - id: shellcheck
         types: [shell]
 
-  - repo: local
+  - repo: https://github.com/scop/pre-commit-shfmt
+    rev: v3.13.1-1
     hooks:
       - id: shfmt
-        name: shfmt
-        entry: shfmt
-        language: system
         args: [--write, --indent, '2', --case-indent, --binary-next-line]
-        types: [shell]
 
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.35.1
