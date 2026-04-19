@@ -254,6 +254,7 @@ function grpdown {
   services=$(_dc_group "$grp")
   [[ -z "$services" ]] && { _dc_red "No services in group: $grp"; return 1; }
   _dc_blue "Stopping $grp: $services"
+  # shellcheck disable=SC2086  # word splitting intentional — $services is space-separated list
   _dc_compose stop $services "$@"
   _dc_green "$grp stopped"
 }
@@ -265,6 +266,7 @@ function grpup {
   services=$(_dc_group "$grp")
   [[ -z "$services" ]] && { _dc_red "No services in group: $grp"; return 1; }
   _dc_blue "Starting $grp: $services"
+  # shellcheck disable=SC2086  # word splitting intentional — $services is space-separated list
   _dc_compose up -d $services "$@"
   _dc_green "$grp started"
 }
@@ -275,6 +277,7 @@ function grplogs {
   local services
   services=$(_dc_group "$grp")
   [[ -z "$services" ]] && { _dc_red "No services in group: $grp"; return 1; }
+  # shellcheck disable=SC2086  # word splitting intentional — $services is space-separated list
   _dc_compose logs -f $services "$@"
 }
 
@@ -284,6 +287,7 @@ function grpps {
   local services
   services=$(_dc_group "$grp")
   [[ -z "$services" ]] && { _dc_red "No services in group: $grp"; return 1; }
+  # shellcheck disable=SC2086  # word splitting intentional — $services is space-separated list
   _dc_compose ps $services "$@"
 }
 
@@ -294,6 +298,7 @@ function grprestart {
   services=$(_dc_group "$grp")
   [[ -z "$services" ]] && { _dc_red "No services in group: $grp"; return 1; }
   _dc_blue "Restarting $grp: $services"
+  # shellcheck disable=SC2086  # word splitting intentional — $services is space-separated list
   _dc_compose restart $services "$@"
   _dc_green "$grp restarted"
 }
