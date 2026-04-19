@@ -41,7 +41,7 @@ alias dlogs='docker logs'
 startgit() { cd "$(git rev-parse --show-toplevel)" && git checkout master && git pull; }
 
 # File Management
-alias rmrf='rm -rf'  # Use with caution
+alias rmrf='rm -rf' # Use with caution
 alias mkdir='mkdir -p'
 alias mv='mv -i'
 alias cp='cp -i'
@@ -52,7 +52,7 @@ alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
 
 # System Monitoring
-alias top='htop'  # Requires htop installed
+alias top='htop' # Requires htop installed
 alias df='df -h'
 alias du='du -ch'
 
