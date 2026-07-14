@@ -4,8 +4,8 @@
 
 set -euo pipefail
 
-readonly PROJECTIVY_PACKAGE="com.spocky.projectivylauncher"
-readonly PROJECTIVY_HOME="${PROJECTIVY_PACKAGE}/com.spocky.projectivylauncher.MainActivity"
+readonly PROJECTIVY_PACKAGE="com.spocky.projengmenu"
+readonly PROJECTIVY_HOME="${PROJECTIVY_PACKAGE}/.ui.home.MainActivity"
 readonly ADB_CONTAINER="${ADB_CONTAINER:-androidtv.internal}"
 
 usage() {
@@ -27,6 +27,7 @@ RESTORE_PATH=""
 BACKUP_PATH=""
 
 case "${2:-}" in
+  "") ;;
   --launcher-only) LAUNCHER_ONLY=true ;;
   --restore)
     LAUNCHER_ONLY=true
@@ -35,6 +36,10 @@ case "${2:-}" in
   --backup)
     LAUNCHER_ONLY=true
     BACKUP_PATH="${3:?--backup needs a path}"
+    ;;
+  --*)
+    printf 'ERROR: unknown option: %s\n' "$2" >&2
+    usage
     ;;
 esac
 
