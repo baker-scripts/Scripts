@@ -10,6 +10,7 @@ Utility scripts for selfhosted infrastructure management.
 - `.bash_aliases` — Shell aliases for common operations
 - `docker_aliases.sh` — Docker Compose wrapper with 1Password secret resolution, fzf integration, Dozzle group management, and tab completion
 - `tmux_session_picker.sh` — Auto-creates tmux sessions on SSH login with a table showing running processes and last access time
+- `projectivy-deploy.sh` — Installs Projectivy Launcher on Android TV over ADB, selects it as home, and supports configuration backup/restore
 
 ## Contributors
 
