@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-readonly ADB_CONTAINER="${ADB_CONTAINER:-androidtv.internal}"
+readonly ADB_CONTAINER="${ADB_CONTAINER:-androidtv-adb}"
 
 usage() {
   cat >&2 <<EOF
@@ -27,9 +27,11 @@ readonly MANIFEST="$2"
 }
 
 declare -a adb_cmd
+using_container=false
 if command -v docker >/dev/null 2>&1 \
   && docker ps --format '{{.Names}}' 2>/dev/null | grep -Fxq "$ADB_CONTAINER"; then
   adb_cmd=(docker exec "$ADB_CONTAINER" adb)
+  using_container=true
 elif command -v adb >/dev/null 2>&1; then
   adb_cmd=(adb)
 else
@@ -42,8 +44,12 @@ run_adb() {
 }
 
 tmp_dir="$(mktemp -d)"
+declare -a container_apks=()
 cleanup() {
   run_adb disconnect "$DEVICE_TARGET" >/dev/null 2>&1 || true
+  if [[ "$using_container" == true && ${#container_apks[@]} -gt 0 ]]; then
+    docker exec "$ADB_CONTAINER" rm -f "${container_apks[@]}" >/dev/null 2>&1 || true
+  fi
   rm -rf "$tmp_dir"
 }
 trap cleanup EXIT
@@ -114,7 +120,13 @@ while IFS=$'\t' read -r package target_version source expected_sha extra; do
     exit 1
   }
   printf 'Updating: %s (%s -> %s)\n' "$package" "$installed_version" "$target_version"
-  run_adb -s "$DEVICE_TARGET" install -r -g "$apk_path"
+  install_path="$apk_path"
+  if [[ "$using_container" == true ]]; then
+    install_path="/tmp/${package}-$$.apk"
+    docker cp "$apk_path" "$ADB_CONTAINER:$install_path"
+    container_apks+=("$install_path")
+  fi
+  run_adb -s "$DEVICE_TARGET" install -r -g "$install_path"
   updates=$((updates + 1))
 done <"$MANIFEST"
 

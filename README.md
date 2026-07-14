@@ -22,8 +22,13 @@ com.spocky.projengmenu	1	managed	-
 com.plexapp.android	1	managed	-
 com.google.android.youtube.tvunplugged	1	managed	-
 ca.devmesh.seerrtv	1	managed	-
-example.sideloaded.app	123	https://example.invalid/app.apk	<64-character-sha256>
+smarttube.package.from.approved.apk	123	https://example.invalid/smarttube.apk	<64-character-sha256>
+ca.devmesh.seerrtv	123	https://example.invalid/seerrtv.apk	<64-character-sha256>
 ```
+
+Use the managed SeerrTV row on Google TV/Shield manifests and the pinned APK row on Fire TV
+manifests. SmartTube is always a pinned sideload row. Obtain the package and version from the exact
+approved APK (`aapt dump badging app.apk`) rather than assuming stable, beta, and F-Droid IDs match.
 
 The ADB client key must be stored outside an ephemeral container. If a device reports
 `unauthorized`, approve that persistent key once on the TV; never rotate keys as a retry strategy.
