@@ -12,6 +12,7 @@ Utility scripts for selfhosted infrastructure management.
 - `tmux_session_picker.sh` — Auto-creates tmux sessions on SSH login with a table showing running processes and last access time
 - `projectivy-deploy.sh` — Installs Projectivy Launcher on Android TV over ADB, selects it as home, and supports configuration backup/restore
 - `androidtv-app-sync.sh` — Applies checksum-pinned APK updates to reachable Android TV devices without downgrading packages
+- [`swag/`](swag/) — Diffs local SWAG nginx proxy-confs against upstream samples and flags genuine upstream changes, filtering out routine customizations
 
 `androidtv-app-sync.sh` can share one manifest between a timer and manual runs. Keep Play-managed
 apps in audit-only mode and pin every sideloaded APK by version and checksum:

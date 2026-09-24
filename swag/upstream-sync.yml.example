@@ -1,0 +1,83 @@
+# SWAG upstream sync workflow template.
+#
+# Copy this file to .github/workflows/upstream-sync.yml in your own
+# SWAG-config repo (the one that holds your nginx proxy-conf files), next to
+# a copy of upstream-diff.sh (and optionally upstream-map.conf). Adjust
+# UPSTREAM_REPO below if you track a different sample-conf source.
+#
+# Runs upstream-diff.sh weekly against a fresh clone of the upstream
+# sample-conf repo and opens a GitHub issue when it finds actionable
+# changes. Requires `contents: read` + `issues: write` and the `gh` CLI
+# (preinstalled on GitHub-hosted runners).
+---
+name: SWAG Upstream Sync
+
+"on":
+  schedule:
+    - cron: "0 9 * * 1" # Monday 9AM UTC
+  workflow_dispatch: {}
+
+env:
+  UPSTREAM_REPO: https://github.com/linuxserver/reverse-proxy-confs.git
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Check upstream changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Clone upstream samples
+        run: git clone --depth 1 "$UPSTREAM_REPO" /tmp/upstream
+
+      - name: Diff enabled configs against upstream
+        id: diff
+        run: |
+          set +e
+          ./swag/upstream-diff.sh /tmp/upstream > /tmp/upstream-diff.md
+          exit_code=$?
+          set -e
+
+          case $exit_code in
+            0)
+              echo "has_changes=false" >> "$GITHUB_OUTPUT"
+              ;;
+            1)
+              echo "has_changes=true" >> "$GITHUB_OUTPUT"
+              count=$(grep -oP '\*\*(\d+)\*\*' /tmp/upstream-diff.md | head -1 | tr -d '*')
+              echo "count=${count:-0}" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "::error::upstream-diff.sh failed with exit code $exit_code"
+              cat /tmp/upstream-diff.md >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Close previous upstream-sync issues
+        if: steps.diff.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue list --label upstream-sync --state open --json number -q '.[].number' | while read -r num; do
+            gh issue close "$num" --comment "Superseded by new weekly scan"
+          done
+
+      - name: Create issue
+        if: steps.diff.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "SWAG upstream changes: ${{ steps.diff.outputs.count }} config(s) need review ($(date +%Y-%m-%d))" \
+            --body-file /tmp/upstream-diff.md \
+            --label "upstream-sync"

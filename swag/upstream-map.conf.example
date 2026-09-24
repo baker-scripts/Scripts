@@ -1,0 +1,13 @@
+# upstream-map.conf — Maps local config names to upstream sample names
+# Format: local_basename=upstream_basename (without .sample extension)
+# Lines starting with # are comments. Blank lines are ignored.
+#
+# Copy this file to upstream-map.conf (next to upstream-diff.sh) and edit
+# for your own renamed/aliased vhosts. upstream-diff.sh loads it
+# automatically if present; it is optional.
+
+# Example: a locally renamed vhost mapped to its real upstream sample
+# my-app.subdomain.conf=some-app.subdomain.conf
+
+# Example: opt a vhost out of diffing entirely (no upstream counterpart)
+# my-redirect.subdomain.conf=SKIP
