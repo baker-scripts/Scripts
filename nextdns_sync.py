@@ -1,6 +1,7 @@
 import argparse
 import json
 import logging
+import ipaddress
 import os
 import requests
 from typing import Optional, Dict, List, Union
@@ -42,6 +43,11 @@ SETTINGS_PERFORMANCE_SYNC = {
 SETTINGS_LOGS_SYNC = {
     "retention": 604800,  # 7 days
 }
+
+# Record that must resolve to a CGNAT (Tailscale) address on every profile after sync
+TAILNET_CHECK_NAME = "tail-home.bakerflix.app"
+TAILNET_CHECK_NET = ipaddress.ip_network("100.64.0.0/10")
+DOH_URL = "https://dns.nextdns.io"
 
 # Keys that should NOT be synced for security (preserved per-profile)
 SECURITY_PRESERVE_KEYS = ["nrd"]
@@ -558,6 +564,46 @@ def sync_profiles(keys_to_sync: List[str], payload: Optional[Dict] = None) -> No
         raise
 
 
+def guard_dns_rebinding(security: Dict) -> None:
+    """Abort before syncing if DNS rebinding protection is on (blocks CGNAT answers)."""
+    if security.get("dnsRebinding"):
+        logger.error(
+            "[GUARD] dnsRebinding is enabled on Main; it blocks private/CGNAT answers "
+            "so tailnet names fail on every profile. Refusing to sync."
+        )
+        raise SystemExit(1)
+
+
+def verify_tailnet_resolution(profile_ids: List[str]) -> None:
+    """Resolve TAILNET_CHECK_NAME over DoH per profile; it must be in 100.64.0.0/10."""
+    for profile_id in profile_ids:
+        try:
+            response = requests.get(
+                f"{DOH_URL}/{profile_id}",
+                params={"name": TAILNET_CHECK_NAME, "type": "A"},
+                headers={"accept": "application/dns-json"},
+                timeout=TIMEOUT,
+            )
+            response.raise_for_status()
+            answers = [
+                ipaddress.ip_address(a["data"])
+                for a in response.json().get("Answer", [])
+                if a.get("type") == 1
+            ]
+            if not any(ip in TAILNET_CHECK_NET for ip in answers):
+                logger.error(
+                    "[VERIFY] %s on profile %s did not resolve into %s (got %s)",
+                    TAILNET_CHECK_NAME,
+                    profile_id,
+                    TAILNET_CHECK_NET,
+                    [str(ip) for ip in answers],
+                )
+            else:
+                logger.info("[VERIFY] %s resolves on profile %s", TAILNET_CHECK_NAME, profile_id)
+        except Exception as e:
+            logger.error("[VERIFY] Resolution check failed for profile %s: %s", profile_id, e)
+
+
 def output_profile_settings(profile_id: str = PROFILE_MAIN) -> None:
     """Fetches and prints the settings of a profile."""
     try:
@@ -589,12 +635,16 @@ def main():
             "security",
             "privacy",
         ]
+        guard_dns_rebinding(fetch_profile_settings(PROFILE_MAIN)["data"].get("security", {}))
         logging.info("Starting profile sync (lists + security + privacy)...")
         sync_profiles(keys_to_sync)
         logging.info("Syncing rewrites...")
         sync_rewrites(PROFILE_MAIN, [p for p in PROFILE_SYNC_LIST if p])
         logging.info("Syncing settings...")
         sync_settings([p for p in PROFILE_SYNC_LIST if p])
+        verify_tailnet_resolution(
+            [p for p in [PROFILE_MAIN, *PROFILE_SYNC_LIST] if p]
+        )
 
     elif args.action == "update":
         logging.info("Updating main profile security settings (TLD ban list)...")
