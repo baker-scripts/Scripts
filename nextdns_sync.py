@@ -7,6 +7,7 @@ from typing import Optional, Dict, List, Union
 
 # Configuration
 TIMEOUT = 10
+PARENTAL_TIMEOUT = 30
 NEXT_DNS_API = "https://api.nextdns.io"
 API_PROFILE_ROUTE = "profiles"
 
@@ -106,6 +107,19 @@ def setup_logger(name: str) -> logging.Logger:
 logger = setup_logger(__name__)
 
 
+class ErrorCounter(logging.Handler):
+    """Counts ERROR records so main() can exit nonzero after attempting everything."""
+
+    count = 0
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if record.levelno >= logging.ERROR:
+            ErrorCounter.count += 1
+
+
+logger.addHandler(ErrorCounter())
+
+
 def api_request(
     method: str,
     url: str,
@@ -181,7 +195,11 @@ def alpha_sort_lists(data: Dict) -> Dict:
 
 
 def update_profile_settings(
-    profile_id: str, payload: Dict, route: Optional[str] = None, method: str = "PATCH"
+    profile_id: str,
+    payload: Dict,
+    route: Optional[str] = None,
+    method: str = "PATCH",
+    timeout: int = TIMEOUT,
 ) -> requests.Response:
     """Updates the settings for a given profile ID."""
     logger.info(
@@ -192,7 +210,9 @@ def update_profile_settings(
         raise ValueError(
             "[UPDATE-PROFILE] Payload cannot be None. Please provide a valid payload."
         )
-    return api_request(method, url, headers=HEADERS, json=payload)
+    return api_request(
+        method, url, headers=HEADERS, json=payload, timeout=timeout
+    )
 
 
 def update_array_settings(
@@ -451,6 +471,23 @@ def diff_profiles() -> None:
     print()
 
 
+def prune_parental_services(profile_id: str, source_services: List[Dict]) -> None:
+    """Deletes parentalControl services on a target that Main lacks (PATCH never removes them)."""
+    keep = {s.get("id") for s in source_services}
+    url = f"{NEXT_DNS_API}/{API_PROFILE_ROUTE}/{profile_id}/parentalControl"
+    current = api_request("GET", url, headers=HEADERS, timeout=PARENTAL_TIMEOUT)
+    for svc in current.json().get("data", {}).get("services", []):
+        sid = svc.get("id")
+        if sid and sid not in keep:
+            api_request(
+                "DELETE",
+                f"{url}/services/{sid}",
+                headers=HEADERS,
+                timeout=PARENTAL_TIMEOUT,
+            )
+            logger.info("[SYNC] Removed stale parental service %s from %s", sid, profile_id)
+
+
 def sync_profiles(keys_to_sync: List[str], payload: Optional[Dict] = None) -> None:
     """Syncs settings from the main profile to the target profiles."""
     try:
@@ -481,7 +518,20 @@ def sync_profiles(keys_to_sync: List[str], payload: Optional[Dict] = None) -> No
                             if isinstance(key_payload, list):
                                 update_array_settings(profile_id, key, key_payload)
                             else:
-                                update_profile_settings(profile_id, key_payload, key)
+                                update_profile_settings(
+                                    profile_id,
+                                    key_payload,
+                                    key,
+                                    timeout=(
+                                        PARENTAL_TIMEOUT
+                                        if key == "parentalControl"
+                                        else TIMEOUT
+                                    ),
+                                )
+                                if key == "parentalControl":
+                                    prune_parental_services(
+                                        profile_id, key_payload.get("services", [])
+                                    )
                             logger.info(
                                 "[SYNC] Successfully updated %s for profile %s.",
                                 key,
@@ -548,6 +598,9 @@ def main():
     elif args.action == "diff":
         diff_profiles()
 
+    if ErrorCounter.count:
+        logging.error("Finished with %d error(s)", ErrorCounter.count)
+        raise SystemExit(1)
     logging.info("Done.")
 
 
