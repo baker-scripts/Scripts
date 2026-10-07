@@ -383,12 +383,20 @@ def diff_profiles() -> None:
     print(f"{'=' * 60}")
 
     for section in sections:
-        source_val = json.dumps(source.get(section, {}), sort_keys=True)
+        source_val = json.dumps(
+            alpha_sort_lists({section: source.get(section, {})})[section],
+            sort_keys=True,
+        )
         diffs = []
         for pid in PROFILE_SYNC_LIST:
             if pid is None or pid not in all_profiles:
                 continue
-            target_val = json.dumps(all_profiles[pid].get(section, {}), sort_keys=True)
+            target_val = json.dumps(
+                alpha_sort_lists({section: all_profiles[pid].get(section, {})})[
+                    section
+                ],
+                sort_keys=True,
+            )
             if source_val != target_val:
                 diffs.append(profile_names[pid])
         if diffs:
