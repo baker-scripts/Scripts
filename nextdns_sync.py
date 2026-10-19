@@ -31,19 +31,6 @@ PROFILE_SYNC_LIST = [
 # Rewrites that are site-specific (Main only), not synced to other profiles
 SITE_SPECIFIC_REWRITES = os.getenv("NEXTDNS_SITE_SPECIFIC_REWRITES", "").split(",")
 
-# Settings to enforce across all synced profiles
-SETTINGS_SYNC = {
-    "bav": True,
-}
-SETTINGS_PERFORMANCE_SYNC = {
-    "cnameFlattening": False,
-    "ecs": True,
-    "cacheBoost": True,
-}
-SETTINGS_LOGS_SYNC = {
-    "retention": 604800,  # 7 days
-}
-
 # Record that must resolve to a CGNAT (Tailscale) address on every profile after sync
 TAILNET_CHECK_NAME = "tail-home.bakerflix.app"
 TAILNET_CHECK_NET = ipaddress.ip_network("100.64.0.0/10")
@@ -331,19 +318,16 @@ def sync_rewrites(source_id: str, target_ids: List[str]) -> None:
 
 
 def sync_settings(target_ids: List[str]) -> None:
-    """Syncs settings (bav, performance, logs) to target profiles."""
+    """Copies Main's whole settings block (logs, blockPage, performance, web3, bav)."""
+    settings = fetch_profile_settings(PROFILE_MAIN)["data"].get("settings", {})
+    scalars = {k: v for k, v in settings.items() if not isinstance(v, dict)}
     for target_id in target_ids:
-        if target_id is None:
-            continue
         try:
-            if SETTINGS_SYNC:
-                update_profile_settings(target_id, SETTINGS_SYNC, "settings")
-            if SETTINGS_PERFORMANCE_SYNC:
-                update_profile_settings(
-                    target_id, SETTINGS_PERFORMANCE_SYNC, "settings/performance"
-                )
-            if SETTINGS_LOGS_SYNC:
-                update_profile_settings(target_id, SETTINGS_LOGS_SYNC, "settings/logs")
+            if scalars:
+                update_profile_settings(target_id, scalars, "settings")
+            for key, value in settings.items():
+                if isinstance(value, dict):
+                    update_profile_settings(target_id, value, f"settings/{key}")
             logger.info("[SETTINGS-SYNC] Updated settings for %s", target_id)
         except Exception as e:
             logger.error("[SETTINGS-SYNC] Failed for %s: %s", target_id, e)
