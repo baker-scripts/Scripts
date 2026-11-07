@@ -513,6 +513,13 @@ def sync_profiles(keys_to_sync: List[str], payload: Optional[Dict] = None) -> No
                                 key_payload["blocklists"]
                             )
                         try:
+                            if key == "security":
+                                target_security = fetch_profile_settings(profile_id)[
+                                    "data"
+                                ].get("security", {})
+                                key_payload = build_security_payload(
+                                    key_payload, target_security
+                                )
                             if isinstance(key_payload, list):
                                 update_array_settings(profile_id, key, key_payload)
                             else:
