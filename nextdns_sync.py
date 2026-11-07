@@ -178,6 +178,14 @@ def build_payload(data: Dict, keys_to_sync: List[str]) -> Dict:
     return {key: data.get(key, []) for key in keys_to_sync if data.get(key) is not None}
 
 
+def build_privacy_payload(privacy: Dict, profile_id: Optional[str] = None) -> Dict:
+    """Normalize blocklists, with Pro plus OISD reserved for Tailnet."""
+    blocklists = filter_blocklists(privacy.get("blocklists", []))
+    if profile_id is not None and profile_id == PROFILE_TAILNET:
+        blocklists = [{"id": "hagezi-multi-pro"}, {"id": "oisd"}]
+    return {**privacy, "blocklists": sorted(blocklists, key=lambda item: item["id"])}
+
+
 def alpha_sort_lists(data: Dict) -> Dict:
     """Sorts the allowlist and denylist alphabetically by 'id'."""
     if "allowlist" in data:
@@ -345,7 +353,7 @@ def build_security_payload(source_security: Dict, target_security: Dict) -> Dict
 
 
 def diff_profiles() -> None:
-    """Shows differences between Main and all synced profiles."""
+    """Shows differences from Main and the Tailnet blocklist policy."""
     source = fetch_profile_settings(PROFILE_MAIN)["data"]
     source_name = source.get("name", PROFILE_MAIN)
 
@@ -373,18 +381,20 @@ def diff_profiles() -> None:
     print(f"{'=' * 60}")
 
     for section in sections:
-        source_val = json.dumps(
-            alpha_sort_lists({section: source.get(section, {})})[section],
-            sort_keys=True,
-        )
         diffs = []
         for pid in PROFILE_SYNC_LIST:
             if pid is None or pid not in all_profiles:
                 continue
+            expected = source.get(section, {})
+            actual = all_profiles[pid].get(section, {})
+            if section == "privacy":
+                expected = build_privacy_payload(expected, pid)
+                actual = build_privacy_payload(actual)
+            source_val = json.dumps(
+                alpha_sort_lists({section: expected})[section], sort_keys=True
+            )
             target_val = json.dumps(
-                alpha_sort_lists({section: all_profiles[pid].get(section, {})})[
-                    section
-                ],
+                alpha_sort_lists({section: actual})[section],
                 sort_keys=True,
             )
             if source_val != target_val:
@@ -399,13 +409,17 @@ def diff_profiles() -> None:
                     continue
                 src = source.get(section, {})
                 tgt = all_profiles[pid].get(section, {})
+                if section == "privacy":
+                    src = build_privacy_payload(src, pid)
+                    tgt = build_privacy_payload(tgt)
                 if isinstance(src, dict):
                     for key in sorted(set(list(src.keys()) + list(tgt.keys()))):
                         sv = json.dumps(src.get(key), sort_keys=True)
                         tv = json.dumps(tgt.get(key), sort_keys=True)
                         if sv != tv:
+                            expected_name = "expected" if section == "privacy" else source_name
                             print(
-                                f"    {name}.{key}: {source_name}={sv[:60]}  {name}={tv[:60]}"
+                                f"    {name}.{key}: {expected_name}={sv[:60]}  {name}={tv[:60]}"
                             )
                 elif isinstance(src, list):
                     src_ids = {i.get("id", "") for i in src if isinstance(i, dict)}
@@ -507,12 +521,16 @@ def sync_profiles(keys_to_sync: List[str], payload: Optional[Dict] = None) -> No
                     if key in payload:
                         key_payload = payload[key]
                         logger.info("[SYNC] Using Key [%s]", key)
-                        if "blocklists" in key_payload:
-                            logger.debug("[SYNC] [blocklists] to be filtered")
-                            key_payload["blocklists"] = filter_blocklists(
-                                key_payload["blocklists"]
-                            )
+                        if key == "privacy":
+                            key_payload = build_privacy_payload(key_payload, profile_id)
                         try:
+                            if key == "security":
+                                target_security = fetch_profile_settings(profile_id)[
+                                    "data"
+                                ].get("security", {})
+                                key_payload = build_security_payload(
+                                    key_payload, target_security
+                                )
                             if isinstance(key_payload, list):
                                 update_array_settings(profile_id, key, key_payload)
                             else:
