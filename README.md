@@ -38,7 +38,7 @@ Python script: `nextdns_sync.py` needs `requests`.
 | --- | --- |
 | `NEXTDNS_API_KEY` | NextDNS API key |
 | `NEXTDNS_PROFILE_MAIN` | Source profile ID |
-| `NEXTDNS_PROFILE_RPM`, `NEXTDNS_PROFILE_BETSY`, `NEXTDNS_PROFILE_LEONA`, `NEXTDNS_PROFILE_HURLEY`, `NEXTDNS_PROFILE_TAILNET` | Target profile IDs; unset ones are skipped |
+| `NEXTDNS_PROFILE_RPM`, `NEXTDNS_PROFILE_BETSY`, `NEXTDNS_PROFILE_LEONA`, `NEXTDNS_PROFILE_HURLEY`, `NEXTDNS_PROFILE_TAILNET`, `NEXTDNS_PROFILE_WES` | Target profile IDs; unset ones are skipped |
 | `NEXTDNS_SITE_SPECIFIC_REWRITES` | Comma-separated rewrite names that stay on Main and are not synced |
 
 ### docker_aliases.sh
