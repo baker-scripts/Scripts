@@ -38,7 +38,9 @@ Python script: `nextdns_sync.py` needs `requests`.
 | --- | --- |
 | `NEXTDNS_API_KEY` | NextDNS API key |
 | `NEXTDNS_PROFILE_MAIN` | Source profile ID |
-| `NEXTDNS_PROFILE_RPM`, `NEXTDNS_PROFILE_BETSY`, `NEXTDNS_PROFILE_LEONA`, `NEXTDNS_PROFILE_HURLEY`, `NEXTDNS_PROFILE_TAILNET`, `NEXTDNS_PROFILE_WES` | Target profile IDs; unset ones are skipped |
+| `NEXTDNS_PROFILE_SYNC_IDS` | Comma-separated target profile IDs, for example `abc123,def456` |
+| `NEXTDNS_PROFILE_TAILNET` | Optional. ID of the target profile that gets the Pro plus OISD blocklists; include it in `NEXTDNS_PROFILE_SYNC_IDS` too |
+| `NEXTDNS_TAILNET_CHECK_NAME` | Optional. Record such as `host.example.com` that must resolve into `100.64.0.0/10` on every profile after sync; unset skips the check |
 | `NEXTDNS_SITE_SPECIFIC_REWRITES` | Comma-separated rewrite names that stay on Main and are not synced |
 
 ### docker_aliases.sh
