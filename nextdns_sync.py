@@ -15,26 +15,16 @@ API_PROFILE_ROUTE = "profiles"
 API_KEY = os.getenv("NEXTDNS_API_KEY")
 
 PROFILE_MAIN = os.getenv("NEXTDNS_PROFILE_MAIN")
-PROFILE_RPM = os.getenv("NEXTDNS_PROFILE_RPM")
-PROFILE_BETSY = os.getenv("NEXTDNS_PROFILE_BETSY")
-PROFILE_LEONA = os.getenv("NEXTDNS_PROFILE_LEONA")
-PROFILE_HURLEY = os.getenv("NEXTDNS_PROFILE_HURLEY")
 PROFILE_TAILNET = os.getenv("NEXTDNS_PROFILE_TAILNET")
-PROFILE_WES = os.getenv("NEXTDNS_PROFILE_WES")
 PROFILE_SYNC_LIST = [
-    PROFILE_RPM,
-    PROFILE_BETSY,
-    PROFILE_LEONA,
-    PROFILE_HURLEY,
-    PROFILE_TAILNET,
-    PROFILE_WES,
+    p.strip() for p in os.getenv("NEXTDNS_PROFILE_SYNC_IDS", "").split(",") if p.strip()
 ]
 
 # Rewrites that are site-specific (Main only), not synced to other profiles
 SITE_SPECIFIC_REWRITES = os.getenv("NEXTDNS_SITE_SPECIFIC_REWRITES", "").split(",")
 
 # Record that must resolve to a CGNAT (Tailscale) address on every profile after sync
-TAILNET_CHECK_NAME = "tail-home.bakerflix.app"
+TAILNET_CHECK_NAME = os.getenv("NEXTDNS_TAILNET_CHECK_NAME")
 TAILNET_CHECK_NET = ipaddress.ip_network("100.64.0.0/10")
 DOH_URL = "https://dns.nextdns.io"
 
@@ -580,6 +570,8 @@ def guard_dns_rebinding(security: Dict) -> None:
 
 def verify_tailnet_resolution(profile_ids: List[str]) -> None:
     """Resolve TAILNET_CHECK_NAME over DoH per profile; it must be in 100.64.0.0/10."""
+    if not TAILNET_CHECK_NAME:
+        return
     for profile_id in profile_ids:
         try:
             response = requests.get(
