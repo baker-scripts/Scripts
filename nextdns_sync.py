@@ -16,9 +16,20 @@ API_KEY = os.getenv("NEXTDNS_API_KEY")
 
 PROFILE_MAIN = os.getenv("NEXTDNS_PROFILE_MAIN")
 PROFILE_TAILNET = os.getenv("NEXTDNS_PROFILE_TAILNET")
-PROFILE_SYNC_LIST = [
-    p.strip() for p in os.getenv("NEXTDNS_PROFILE_SYNC_IDS", "").split(",") if p.strip()
-]
+
+
+def profile_sync_ids(environ) -> List[str]:
+    """Target profile IDs: every NEXTDNS_PROFILE_* except MAIN, by variable name, non-empty."""
+    return [
+        value.strip()
+        for name, value in sorted(environ.items())
+        if name.startswith("NEXTDNS_PROFILE_")
+        and name != "NEXTDNS_PROFILE_MAIN"
+        and value.strip()
+    ]
+
+
+PROFILE_SYNC_LIST = profile_sync_ids(os.environ)
 
 # Rewrites that are site-specific (Main only), not synced to other profiles
 SITE_SPECIFIC_REWRITES = os.getenv("NEXTDNS_SITE_SPECIFIC_REWRITES", "").split(",")
@@ -571,6 +582,7 @@ def guard_dns_rebinding(security: Dict) -> None:
 def verify_tailnet_resolution(profile_ids: List[str]) -> None:
     """Resolve TAILNET_CHECK_NAME over DoH per profile; it must be in 100.64.0.0/10."""
     if not TAILNET_CHECK_NAME:
+        logger.warning("[VERIFY] NEXTDNS_TAILNET_CHECK_NAME is unset; skipping tailnet check")
         return
     for profile_id in profile_ids:
         try:

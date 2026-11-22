@@ -99,5 +99,28 @@ class PrivacySyncTests(unittest.TestCase):
         self.assertIn("privacy: DIFFERS on Tailnet", output.getvalue())
 
 
+class ProfileDiscoveryTests(unittest.TestCase):
+    def test_targets_exclude_main_skip_empty_and_sort_by_name(self):
+        environ = {
+            "NEXTDNS_PROFILE_MAIN": "m",
+            "NEXTDNS_PROFILE_SITE_B": "b2",
+            "NEXTDNS_PROFILE_SITE_A": " a1 ",
+            "NEXTDNS_PROFILE_TAILNET": "t3",
+            "NEXTDNS_PROFILE_EMPTY": "  ",
+            "NEXTDNS_API_KEY": "k",
+        }
+        self.assertEqual(nextdns_sync.profile_sync_ids(environ), ["a1", "b2", "t3"])
+
+    def test_unset_check_name_logs_one_warning_and_skips(self):
+        with (
+            patch.object(nextdns_sync, "TAILNET_CHECK_NAME", None),
+            patch.object(nextdns_sync.requests, "get") as get,
+            self.assertLogs(nextdns_sync.logger, level="WARNING") as logs,
+        ):
+            nextdns_sync.verify_tailnet_resolution(["a1"])
+        get.assert_not_called()
+        self.assertEqual(len(logs.output), 1)
+
+
 if __name__ == "__main__":
     unittest.main()
