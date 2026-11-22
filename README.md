@@ -38,8 +38,8 @@ Python script: `nextdns_sync.py` needs `requests`.
 | --- | --- |
 | `NEXTDNS_API_KEY` | NextDNS API key |
 | `NEXTDNS_PROFILE_MAIN` | Source profile ID |
-| `NEXTDNS_PROFILE_SYNC_IDS` | Comma-separated target profile IDs, for example `abc123,def456` |
-| `NEXTDNS_PROFILE_TAILNET` | Optional. ID of the target profile that gets the Pro plus OISD blocklists; include it in `NEXTDNS_PROFILE_SYNC_IDS` too |
+| `NEXTDNS_PROFILE_<NAME>` | Target profile ID. Every variable with this prefix except `NEXTDNS_PROFILE_MAIN` is a sync target, in variable-name order; empty values are skipped. Example: `NEXTDNS_PROFILE_SITE_A`, `NEXTDNS_PROFILE_SITE_B` |
+| `NEXTDNS_PROFILE_TAILNET` | Optional target profile that gets the Pro plus OISD blocklists |
 | `NEXTDNS_TAILNET_CHECK_NAME` | Optional. Record such as `host.example.com` that must resolve into `100.64.0.0/10` on every profile after sync; unset skips the check |
 | `NEXTDNS_SITE_SPECIFIC_REWRITES` | Comma-separated rewrite names that stay on Main and are not synced |
 
